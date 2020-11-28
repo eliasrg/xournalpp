@@ -42,6 +42,7 @@ class ActionHandler;
 
 class ToolHandler {
 public:
+    using ToolChangedCallback = std::function<void(ToolType)>;
     ToolHandler(ToolListener* stateChangedListener, ActionHandler* actionHandler, Settings* settings);
     virtual ~ToolHandler();
 
@@ -96,7 +97,7 @@ public:
 
     // Different from the listener given to the constructor -- [listener]
     // here only listens for when the current tool is changed to another.
-    void addToolChangedListener(std::function<void(ToolType)> listener);
+    void addToolChangedListener(ToolChangedCallback listener);
 
     Tool& getTool(ToolType type);
 
@@ -154,7 +155,7 @@ private:
      * not in the list, so its a "custom" color for us
      */
 
-    std::vector<std::function<void(ToolType)> > toolChangeListeners;
+    std::vector<ToolChangedCallback> toolChangeListeners;
     ToolListener* stateChangeListener;
 
     ActionHandler* actionHandler = nullptr;

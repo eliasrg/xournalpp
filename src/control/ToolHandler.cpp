@@ -15,7 +15,6 @@ ToolListener::~ToolListener() = default;
 ToolHandler::ToolHandler(ToolListener* stateChangeListener, ActionHandler* actionHandler, Settings* settings) {
     this->settings = settings;
     initTools();
-    this->toolChangeListeners = std::vector<std::function<void(ToolType)> >();
     this->actionHandler = actionHandler;
 
     this->stateChangeListener = stateChangeListener;
@@ -154,15 +153,15 @@ void ToolHandler::selectTool(ToolType type, bool fireToolChanged, bool triggered
 }
 
 void ToolHandler::fireToolChanged() {
-    for (auto listener: this->toolChangeListeners) {
+    for (auto&& listener: this->toolChangeListeners) {
         listener(this->currentTool->type);
     }
 
     stateChangeListener->toolChanged();
 }
 
-void ToolHandler::addToolChangedListener(std::function<void(ToolType)> listener) {
-    toolChangeListeners.push_back(listener);
+void ToolHandler::addToolChangedListener(ToolChangedCallback listener) {
+    toolChangeListeners.emplace_back(std::move(listener));
 }
 
 auto ToolHandler::getTool(ToolType type) -> Tool& { return *(this->tools[type - TOOL_PEN]); }
