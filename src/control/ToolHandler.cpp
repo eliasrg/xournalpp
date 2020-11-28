@@ -12,11 +12,13 @@
 
 ToolListener::~ToolListener() = default;
 
-ToolHandler::ToolHandler(ToolListener* listener, ActionHandler* actionHandler, Settings* settings) {
+ToolHandler::ToolHandler(ToolListener* stateChangeListener, ActionHandler* actionHandler, Settings* settings) {
     this->settings = settings;
     initTools();
-    this->listener = listener;
+    this->toolChangeListeners = std::vector<std::function<void(ToolType)> >();
     this->actionHandler = actionHandler;
+
+    this->stateChangeListener = stateChangeListener;
 }
 
 void ToolHandler::initTools() {
@@ -152,9 +154,15 @@ void ToolHandler::selectTool(ToolType type, bool fireToolChanged, bool triggered
 }
 
 void ToolHandler::fireToolChanged() {
-    if (listener) {
-        listener->toolChanged();
+    for (auto listener: this->toolChangeListeners) {
+        listener(this->currentTool->type);
     }
+
+    stateChangeListener->toolChanged();
+}
+
+void ToolHandler::addToolChangedListener(std::function<void(ToolType)> listener) {
+    toolChangeListeners.push_back(listener);
 }
 
 auto ToolHandler::getTool(ToolType type) -> Tool& { return *(this->tools[type - TOOL_PEN]); }
@@ -184,7 +192,7 @@ void ToolHandler::setPenSize(ToolSize size) {
     this->tools[TOOL_PEN - TOOL_PEN]->setSize(size);
 
     if (this->currentTool->type == TOOL_PEN) {
-        this->listener->toolSizeChanged();
+        this->stateChangeListener->toolSizeChanged();
     }
 }
 
@@ -192,7 +200,7 @@ void ToolHandler::setEraserSize(ToolSize size) {
     this->tools[TOOL_ERASER - TOOL_PEN]->setSize(size);
 
     if (this->currentTool->type == TOOL_ERASER) {
-        this->listener->toolSizeChanged();
+        this->stateChangeListener->toolSizeChanged();
     }
 }
 
@@ -200,7 +208,7 @@ void ToolHandler::setHilighterSize(ToolSize size) {
     this->tools[TOOL_HILIGHTER - TOOL_PEN]->setSize(size);
 
     if (this->currentTool->type == TOOL_HILIGHTER) {
-        this->listener->toolSizeChanged();
+        this->stateChangeListener->toolSizeChanged();
     }
 }
 
@@ -208,7 +216,7 @@ void ToolHandler::setPenFillEnabled(bool fill, bool fireEvent) {
     this->tools[TOOL_PEN - TOOL_PEN]->setFill(fill);
 
     if (this->currentTool->type == TOOL_PEN && fireEvent) {
-        this->listener->toolFillChanged();
+        this->stateChangeListener->toolFillChanged();
     }
 }
 
@@ -222,7 +230,7 @@ void ToolHandler::setHilighterFillEnabled(bool fill, bool fireEvent) {
     this->tools[TOOL_HILIGHTER - TOOL_PEN]->setFill(fill);
 
     if (this->currentTool->type == TOOL_HILIGHTER && fireEvent) {
-        this->listener->toolFillChanged();
+        this->stateChangeListener->toolFillChanged();
     }
 }
 
@@ -249,12 +257,12 @@ void ToolHandler::setSize(ToolSize size, ToolPointer toolPointer) {
         return;
     }
     tool->setSize(size);
-    this->listener->toolSizeChanged();
+    this->stateChangeListener->toolSizeChanged();
 }
 
 void ToolHandler::setLineStyle(const LineStyle& style) {
     this->tools[TOOL_PEN - TOOL_PEN]->setLineStyle(style);
-    this->listener->toolLineStyleChanged();
+    this->stateChangeListener->toolLineStyleChanged();
 }
 
 /**
@@ -274,8 +282,8 @@ void ToolHandler::setColor(Color color, bool userSelection) {
         this->toolbarSelectedTool->setColor(color);
     }
     this->currentTool->setColor(color);
-    this->listener->toolColorChanged(userSelection);
-    this->listener->setCustomColorSelected();
+    this->stateChangeListener->toolColorChanged(userSelection);
+    this->stateChangeListener->setCustomColorSelected();
 }
 
 auto ToolHandler::getColor(ToolPointer toolPointer) -> Color {
@@ -451,8 +459,8 @@ void ToolHandler::pointCurrentToolToButtonTool() { this->currentTool = this->but
 void ToolHandler::pointCurrentToolToToolbarTool() {
     this->currentTool = this->toolbarSelectedTool;
 
-    this->listener->toolColorChanged(false);
-    this->listener->toolSizeChanged();
+    this->stateChangeListener->toolColorChanged(false);
+    this->stateChangeListener->toolSizeChanged();
     this->fireToolChanged();
 }
 
@@ -475,9 +483,9 @@ void ToolHandler::setSelectionEditTools(bool setColor, bool setSize, bool setFil
 
     if (this->currentTool->type == TOOL_SELECT_RECT || this->currentTool->type == TOOL_SELECT_REGION ||
         this->currentTool->type == TOOL_SELECT_OBJECT || this->currentTool->type == TOOL_PLAY_OBJECT) {
-        this->listener->toolColorChanged(false);
-        this->listener->toolSizeChanged();
-        this->listener->toolFillChanged();
+        this->stateChangeListener->toolColorChanged(false);
+        this->stateChangeListener->toolSizeChanged();
+        this->stateChangeListener->toolFillChanged();
         this->fireToolChanged();
     }
 }

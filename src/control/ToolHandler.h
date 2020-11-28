@@ -12,6 +12,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,7 +42,7 @@ class ActionHandler;
 
 class ToolHandler {
 public:
-    ToolHandler(ToolListener* listener, ActionHandler* actionHandler, Settings* settings);
+    ToolHandler(ToolListener* stateChangedListener, ActionHandler* actionHandler, Settings* settings);
     virtual ~ToolHandler();
 
     /**
@@ -92,6 +93,10 @@ public:
     void selectTool(ToolType type, bool fireToolChanged = true, bool stylus = false);
     ToolType getToolType(ToolPointer toolpointer = ToolPointer::current);
     void fireToolChanged();
+
+    // Different from the listener given to the constructor -- [listener]
+    // here only listens for when the current tool is changed to another.
+    void addToolChangedListener(std::function<void(ToolType)> listener);
 
     Tool& getTool(ToolType type);
 
@@ -149,7 +154,8 @@ private:
      * not in the list, so its a "custom" color for us
      */
 
-    ToolListener* listener = nullptr;
+    std::vector<std::function<void(ToolType)> > toolChangeListeners;
+    ToolListener* stateChangeListener;
 
     ActionHandler* actionHandler = nullptr;
 

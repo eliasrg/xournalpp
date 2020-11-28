@@ -35,4 +35,7 @@ public:
 
 protected:
     bool changeTool(InputEvent const& event) override;
+
+private:
+    void updateKineticScrollingEnabled();
 };
