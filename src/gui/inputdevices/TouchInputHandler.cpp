@@ -27,13 +27,15 @@ auto TouchInputHandler::handleImpl(InputEvent const& event) -> bool {
         }
         // Start zooming as soon as we have two sequences
         else if (this->primarySequence && this->primarySequence != event.sequence &&
-                 this->secondarySequence == nullptr && zoomGesturesEnabled) {
+                 this->secondarySequence == nullptr) {
             this->secondarySequence = event.sequence;
 
             // Set sequence data
             sequenceStart(event);
 
-            zoomStart();
+            if (zoomGesturesEnabled) {
+                zoomStart();
+            }
         }
     }
 
@@ -42,6 +44,8 @@ auto TouchInputHandler::handleImpl(InputEvent const& event) -> bool {
             zoomMotion(event);
         } else if (event.sequence == this->primarySequence) {
             scrollMotion(event);
+        } else if (this->primarySequence && this->secondarySequence) {
+            sequenceStart(event);
         }
     }
 
